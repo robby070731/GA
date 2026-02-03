@@ -6,7 +6,9 @@ const fs = require("fs").promises;
 const app = express();
 const server = createServer(app);
 const bcrypt = require("bcryptjs");
+const escape = require("escape-html")
 const session = require("express-session");
+const { get } = require("https");
 const io = new Server(server);
 const sessionMiddleware = session({
     secret: "keyboard cat",
@@ -24,6 +26,10 @@ server.listen(process.env.port || 3456, () => {
 	console.log("Server is running");
 })
 
+function auth(req, res, next){
+    if(req.session.loggedIn) return next();
+    res.redirect("/?error=Not logged in...");
+}
 
 async function render(req,data){
     const template = await fs.readFile("index.html","utf8");
@@ -38,11 +44,11 @@ async function render(req,data){
 }
 
 async function saveData(data, file){
-    await fs.writeFile(file,JSON.stringify(data,null, 4));
+    await fs.writeFile(`data/${file}.json`,JSON.stringify(data,null, 4));
 }
 //Hämtar data från json
 async function getData(file){
-    return JSON.parse((await fs.readFile(file)));
+    return JSON.parse((await fs.readFile(`data/${file}.json`)));
 }
 
 io.on('connection', (socket) => {
@@ -54,8 +60,23 @@ io.on('connection', (socket) => {
 	})
 })
 
+app.get("/troubleshoot", (req, res)=>{
+    res.send(req.session)
+})
+
 app.get("/", async (req, res)=>{
-    res.send(await render(req, ""));
+    const games = await getData("games");
+    const html = games.map(g=>`
+        <div class="games">
+            <a href="/moreinfo?gameId=${g.gameId}">
+                <h2>${escape(g.title)}</h2>
+                <div class="imgBox">
+                    <img src="${escape(g.imgSRC)}" alt="">
+                </div>
+            </a>
+        </div>
+        `).join("");
+    res.send(await render(req, html));
 })
 
 app.get("/loginForm", async (req, res)=>{
@@ -88,24 +109,51 @@ app.get("/registerForm", async (req, res)=>{
     res.send(html);
 })
 
+app.get("/addGameForm", auth, async (req, res)=>{
+    const addGameHtml = `
+        <div id="addGame">
+            <h2>Add Game</h2>
+            <form action="/addGame" method="post">
+                <input type="text" name="title" placeholder="Title">
+                <input type="url" name="imgSRC" placeholder="IMG-Link">
+                <input type="text" name="desc" placeholder="Description">
+                <input type="submit" value="Add Game">
+            </form>
+        </div>`;
+    const html = await render(req, addGameHtml);
+    res.send(html);
+})
+
+app.post("/addGame", auth, async (req, res)=>{
+    const title = req.body.title;
+    const imgSRC = req.body.imgSRC;
+    const desc = req.body.desc;
+    const author = req.session.email;
+    const gameId = "id:" + Date.now();
+    const games = await getData("games");
+    games.push({title, imgSRC, desc, author, gameId});
+    await saveData(games, "games");
+    res.redirect("/?success")
+})
+
 app.post("/register", async (req, res)=>{
     const username = req.body.username;
     const email = req.body.email;
-    const accounts = await getData("data/accounts.json");
+    const accounts = await getData("accounts");
     if(accounts.find(a=>a.email == email)) return res.send(await render(req,"<h1>There is already a user with this email</h1>"));
     if(req.body.password !== req.body.passwordConfirm) return res.send(await render(req,"<h1>Password doesn't match</h1>"));
     const password = await bcrypt.hash(req.body.password, 12);
     const accountId = "id:" +  Date.now();
-    accounts.push({username,email,password,accountId});
-    await saveData(accounts,"data/accounts.json");
-    res.redirect("/?success");
+    accounts.push({username, email, password, accountId});
+    await saveData(accounts, "accounts");
+    res.redirect("/loginForm");
 })
 
 app.post("/login", async (req, res)=>{
     // Hämtar data från login formulär och existerande användare
     const email = req.body.email;
     const password = req.body.password;
-    const existUsers = await getData("data/accounts.json");
+    const existUsers = await getData("accounts");
     const user = existUsers.find(u=>u.email===email);
     // Kollar email och jämför lösenord
     if(!user) return res.send(await render(req,"<h1>Incorrect credentials</h1>"));
@@ -115,4 +163,10 @@ app.post("/login", async (req, res)=>{
     req.session.loggedIn = true;
     req.session.email = email;
     res.redirect("/?login_success");
+})
+
+app.get("/logout",(req,res)=>{
+    req.session.destroy();
+    res.clearCookie("connect.sid");
+    res.redirect("/");
 })

@@ -5,5 +5,12 @@
         "desc": "Bigger and Boulder",
         "author": "image@gmail.com",
         "gameId": "id:1770118738112"
+    },
+    {
+        "title": "Minecraft",
+        "imgSRC": "https://image.api.playstation.com/vulcan/ap/rnd/202407/0401/165b1afdf14c26321af90746e4a42e23416bb74eafd34b0c.png",
+        "desc": "Sandbox",
+        "author": "image@gmail.com",
+        "gameId": "id:1770200589959"
     }
 ]

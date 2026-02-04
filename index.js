@@ -79,6 +79,38 @@ app.get("/", async (req, res)=>{
     res.send(await render(req, html));
 })
 
+app.get("/moreInfo", async (req, res)=>{
+    const gameId = req.query.gameId;
+    const game = (await getData("games")).find(g=>g.gameId == gameId);
+    const comments = (await getData("comments").find(c=>c.gameId == gameId));
+    const html = `
+        <div class="game">
+            <div class="gameInfo">
+                <h3>${escape(game.title)}</h3>
+                <img src="${escape(game.imgSRC)}" alt="">
+                <p>${escape(game.desc)}</p>
+            </div>
+
+            ${req.session.loggedIn && req.session.email == game.author ? `
+            <div class="update">
+                <a style="text-decoration:underline" href="/delete?gameId=${game.gameId}">Delete</a>
+                <h2>Update</h2>
+                <form action="/update?gameId=${game.gameId}" method="post">
+                    <input type="text" name="title" placeholder="Title" value="${escape(game.title)}">
+                    <input type="text" name="imgUrl" placeholder="Image URL">
+                    <input type="text" name="desc" placeholder="Description" value="${escape(game.desc)}">
+                    <input type="submit" value="Update">
+                </form>
+            </div>`: ""}
+        </div>` + comments.map(c=>`
+            <div class="comment">
+                <p>${c.username}</p>
+                <p>${c.content}</p>
+            </div>
+            `).join("");
+    res.send(await render(req, html));
+})
+
 app.get("/loginForm", async (req, res)=>{
 	const loginHtml = `
 		<div id="login">

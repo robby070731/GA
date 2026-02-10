@@ -46,7 +46,7 @@ async function render(req,data){
 async function saveData(data, file){
     await fs.writeFile(`data/${file}.json`,JSON.stringify(data,null, 4));
 }
-//Hämtar data från json
+
 async function getData(file){
     return JSON.parse((await fs.readFile(`data/${file}.json`)));
 }
@@ -82,7 +82,7 @@ app.get("/", async (req, res)=>{
 app.get("/moreInfo", async (req, res)=>{
     const gameId = req.query.gameId;
     const game = (await getData("games")).find(g=>g.gameId == gameId);
-    const comments = (await getData("comments").find(c=>c.gameId == gameId));
+    const comments = (await getData("comments")).find(c=>c.gameId == gameId);
     const html = `
         <div class="game">
             <div class="gameInfo">
@@ -90,7 +90,6 @@ app.get("/moreInfo", async (req, res)=>{
                 <img src="${escape(game.imgSRC)}" alt="">
                 <p>${escape(game.desc)}</p>
             </div>
-
             ${req.session.loggedIn && req.session.email == game.author ? `
             <div class="update">
                 <a style="text-decoration:underline" href="/delete?gameId=${game.gameId}">Delete</a>
@@ -101,13 +100,24 @@ app.get("/moreInfo", async (req, res)=>{
                     <input type="text" name="desc" placeholder="Description" value="${escape(game.desc)}">
                     <input type="submit" value="Update">
                 </form>
-            </div>`: ""}
-        </div>` + comments.map(c=>`
-            <div class="comment">
-                <p>${c.username}</p>
-                <p>${c.content}</p>
             </div>
-            `).join("");
+            `: ""}
+            ${req.session.loggedIn ? `
+            <div class="commentForm">
+                <h2>Comment</h2>
+                <form action="" id="commentForm">
+                    <input type="text" name="comment" placeholder="Comment">
+                </form>
+            </div>`: ""}
+            ${comments && comments.length ? 
+            `<div class="comments">
+                ${comments.map(c => `
+                <div class="comment">
+                    <p>${escape(c.username)}</p>
+                    <p>${escape(c.content)}</p>
+                </div>`).join("")}
+            </div>`: ""}
+        </div>`;
     res.send(await render(req, html));
 })
 
@@ -156,31 +166,6 @@ app.get("/addGameForm", auth, async (req, res)=>{
     res.send(html);
 })
 
-app.post("/addGame", auth, async (req, res)=>{
-    const title = req.body.title;
-    const imgSRC = req.body.imgSRC;
-    const desc = req.body.desc;
-    const author = req.session.email;
-    const gameId = "id:" + Date.now();
-    const games = await getData("games");
-    games.push({title, imgSRC, desc, author, gameId});
-    await saveData(games, "games");
-    res.redirect("/?success")
-})
-
-app.post("/register", async (req, res)=>{
-    const username = req.body.username;
-    const email = req.body.email;
-    const accounts = await getData("accounts");
-    if(accounts.find(a=>a.email == email)) return res.send(await render(req,"<h1>There is already a user with this email</h1>"));
-    if(req.body.password !== req.body.passwordConfirm) return res.send(await render(req,"<h1>Password doesn't match</h1>"));
-    const password = await bcrypt.hash(req.body.password, 12);
-    const accountId = "id:" +  Date.now();
-    accounts.push({username, email, password, accountId});
-    await saveData(accounts, "accounts");
-    res.redirect("/loginForm");
-})
-
 app.post("/login", async (req, res)=>{
     // Hämtar data från login formulär och existerande användare
     const email = req.body.email;
@@ -197,7 +182,32 @@ app.post("/login", async (req, res)=>{
     res.redirect("/?login_success");
 })
 
-app.get("/logout",(req,res)=>{
+app.post("/register", async (req, res)=>{
+    const username = req.body.username;
+    const email = req.body.email;
+    const accounts = await getData("accounts");
+    if(accounts.find(a=>a.email == email)) return res.send(await render(req,"<h1>There is already a user with this email</h1>"));
+    if(req.body.password !== req.body.passwordConfirm) return res.send(await render(req,"<h1>Password doesn't match</h1>"));
+    const password = await bcrypt.hash(req.body.password, 12);
+    const accountId = "id:" +  Date.now();
+    accounts.push({username, email, password, accountId});
+    await saveData(accounts, "accounts");
+    res.redirect("/loginForm");
+})
+
+app.post("/addGame", auth, async (req, res)=>{
+    const title = req.body.title;
+    const imgSRC = req.body.imgSRC;
+    const desc = req.body.desc;
+    const author = req.session.email;
+    const gameId = "id:" + Date.now();
+    const games = await getData("games");
+    games.push({title, imgSRC, desc, author, gameId});
+    await saveData(games, "games");
+    res.redirect("/?success")
+})
+
+app.get("/logout", (req,res)=>{
     req.session.destroy();
     res.clearCookie("connect.sid");
     res.redirect("/");

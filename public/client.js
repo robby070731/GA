@@ -3,23 +3,21 @@ console.log("client");
 // Koppla upp
 const socket = io();
 
-function sendMSG(msg){
-    socket.emit("chat", msg);
+function sendComment(comment){
+    socket.emit("comment", comment);
     console.log("Client has sent a message");
 }
 
-socket.on("chat", (msg)=>{
-    console.log("From server: " + msg);
-    const chatBox = document.querySelector("#chatBox");
-    const p = document.createElement("p");
-    p.innerHTML = msg;
-    chatBox.appendChild(p)
+socket.on("comment", (comment)=>{
+    console.log("From server: " + comment);
+    const commentsDiv = document.querySelector("#comments");
+    commentsDiv.insertAdjacentHTML("beforeend", comment);
 })
 
-const chatForm = document.querySelector("#chatForm");
-chatForm.addEventListener("submit", (event)=>{
+const commentForm = document.querySelector("#commentForm");
+commentForm.addEventListener("submit", (event)=>{
     event.preventDefault();
-    console.log(event.target.msg.value);
-    const msg = event.target.msg.value;
-    if(msg) sendMSG(msg)
+    console.log(event.target.comment.value);
+    const comment = event.target.comment.value;
+    if(comment) sendComment(comment)
 })

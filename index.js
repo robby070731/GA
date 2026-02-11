@@ -54,9 +54,19 @@ async function getData(file){
 io.on('connection', (socket) => {
 	console.log('a user connected');
     console.log(socket.request.session.email)
-	socket.on("chat",(msg)=>{
-		console.log("Message: " + msg);
-		io.emit("chat", msg);
+	socket.on("comment", async (comment)=>{
+		console.log("Message: " + comment);
+        const username = socket.request.session.username;
+        const content = comment;
+        const comments = await getData("comments");
+        comments.push({username, content});
+        await saveData(comments, "comments")
+        html = `
+            <div class="comment">
+                <p>${escape(username)}</p>
+                <p>${escape(content)}</p>
+            </div>`;
+		io.emit("comment", html);
 	})
 })
 
@@ -109,14 +119,15 @@ app.get("/moreInfo", async (req, res)=>{
                     <input type="text" name="comment" placeholder="Comment">
                 </form>
             </div>`: ""}
-            ${comments && comments.length ? 
-            `<div class="comments">
+            <div id="comments">
+                ${comments && comments.length ? `
                 ${comments.map(c => `
                 <div class="comment">
                     <p>${escape(c.username)}</p>
                     <p>${escape(c.content)}</p>
                 </div>`).join("")}
-            </div>`: ""}
+                `: ""}
+            </div>
         </div>`;
     res.send(await render(req, html));
 })
@@ -179,6 +190,7 @@ app.post("/login", async (req, res)=>{
     // Uppdatarar sessioms / kaka 
     req.session.loggedIn = true;
     req.session.email = email;
+    req.session.username = user.username;
     res.redirect("/?login_success");
 })
 

@@ -4,7 +4,7 @@ console.log("client");
 const socket = io();
 
 function sendComment(comment){
-    socket.emit("comment", comment);
+    socket.emit("comment", comment, gameId);
     console.log("Client has sent a message");
 }
 
@@ -17,7 +17,7 @@ socket.on("comment", (comment)=>{
 const commentForm = document.querySelector("#commentForm");
 commentForm.addEventListener("submit", (event)=>{
     event.preventDefault();
-    console.log(event.target.comment.value);
     const comment = event.target.comment.value;
+    console.log(comment);
     if(comment) sendComment(comment)
 })

@@ -54,13 +54,18 @@ async function getData(file){
 io.on('connection', (socket) => {
 	console.log('a user connected');
     console.log(socket.request.session.email)
-	socket.on("comment", async (comment)=>{
+	socket.on("comment", async (comment, gameId)=>{
 		console.log("Message: " + comment);
         const username = socket.request.session.username;
         const content = comment;
         const comments = await getData("comments");
-        comments.push({username, content});
-        await saveData(comments, "comments")
+        let specComments = comments.find(c=>c.gameId == gameId);
+        console.log(specComments);
+        if(!specComments){
+            specComments = {gameId,"comments":[]}
+        }
+        specComments.comments.push({username, content});
+        await saveData(comments, "comments");
         html = `
             <div class="comment">
                 <p>${escape(username)}</p>
@@ -94,6 +99,7 @@ app.get("/moreInfo", async (req, res)=>{
     const game = (await getData("games")).find(g=>g.gameId == gameId);
     const comments = (await getData("comments")).find(c=>c.gameId == gameId);
     const html = `
+        <script>const gameId = "${game.gameId}";</script>
         <div class="game">
             <div class="gameInfo">
                 <h3>${escape(game.title)}</h3>
@@ -113,7 +119,7 @@ app.get("/moreInfo", async (req, res)=>{
             </div>
             `: ""}
             ${req.session.loggedIn ? `
-            <div class="commentForm">
+            <div id="commentForm">
                 <h2>Comment</h2>
                 <form action="" id="commentForm">
                     <input type="text" name="comment" placeholder="Comment">

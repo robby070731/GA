@@ -62,7 +62,8 @@ io.on('connection', (socket) => {
         let specComments = comments.find(c=>c.gameId == gameId);
         console.log(specComments);
         if(!specComments){
-            specComments = {gameId,"comments":[]}
+            comments.push({gameId,"comments":[]})
+            specComments = comments.find(c=>c.gameId == gameId);
         }
         specComments.comments.push({username, content});
         await saveData(comments, "comments");

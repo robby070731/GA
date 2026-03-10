@@ -15,9 +15,19 @@ socket.on("comment", (comment)=>{
 })
 
 const commentForm = document.querySelector("#commentForm");
-commentForm.addEventListener("submit", (event)=>{
-    event.preventDefault();
-    const comment = event.target.comment.value;
-    console.log(comment);
-    if(comment) sendComment(comment)
+if(commentForm){
+    commentForm.addEventListener("submit", (event)=>{
+        event.preventDefault();
+        const comment = event.target.comment.value;
+        console.log(comment);
+        if(comment) sendComment(comment);
+    })
+}
+window.addEventListener("load",()=>{
+    let url = window.location.href.split("?");
+    console.log(url[0]);
+    if(url[0] !== "http://localhost:3456/"){
+        console.log("Simon suger på minecraft");
+        document.querySelector("main").style.display = "block";
+    }
 })

@@ -127,8 +127,8 @@ app.get("/moreInfo", async (req, res)=>{
                 </form>
             </div>`: ""}
             <div id="comments">
-                ${comments && comments.length ? `
-                ${comments.map(c => `
+                ${comments && comments.comments.length ? `
+                ${comments.comments.map(c => `
                 <div class="comment">
                     <p>${escape(c.username)}</p>
                     <p>${escape(c.content)}</p>
@@ -224,6 +224,16 @@ app.post("/addGame", auth, async (req, res)=>{
     games.push({title, imgSRC, desc, author, gameId});
     await saveData(games, "games");
     res.redirect("/?success")
+})
+
+app.get("/delete", auth, async (req, res)=>{
+    const gameId = req.query.gameId;
+    const allGames = await getData("games")
+    if(!req.session.email === allGames.find(g=>g.gameId === gameId).author) return res.redirect("/?error=Not Authorized");
+
+    await saveData(games.filter(g=>g.gameId !== gameId), "games")
+
+    res.redirect("/")
 })
 
 app.get("/logout", (req,res)=>{

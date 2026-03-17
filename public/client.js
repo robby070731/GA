@@ -31,3 +31,10 @@ window.addEventListener("load",()=>{
         document.querySelector("main").style.display = "block";
     }
 })
+
+function confirmDelete(gameId){
+    if(window.confirm("Are you sure?")){
+        console.log("Okidoki");
+        window.location.replace(`/delete?gameId=${gameId}`);
+    }
+}

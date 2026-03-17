@@ -109,7 +109,7 @@ app.get("/moreInfo", async (req, res)=>{
             </div>
             ${req.session.loggedIn && req.session.email == game.author ? `
             <div class="update">
-                <a style="text-decoration:underline" href="/delete?gameId=${game.gameId}">Delete</a>
+                <button style="text-decoration:underline" onclick="confirmDelete('${game.gameId}');">Delete</button>
                 <h2>Update</h2>
                 <form action="/update?gameId=${game.gameId}" method="post">
                     <input type="text" name="title" placeholder="Title" value="${escape(game.title)}">
@@ -228,12 +228,12 @@ app.post("/addGame", auth, async (req, res)=>{
 
 app.get("/delete", auth, async (req, res)=>{
     const gameId = req.query.gameId;
-    const allGames = await getData("games")
+    const allGames = await getData("games");
     if(!req.session.email === allGames.find(g=>g.gameId === gameId).author) return res.redirect("/?error=Not Authorized");
-
-    await saveData(games.filter(g=>g.gameId !== gameId), "games")
-
-    res.redirect("/")
+    const comments = await getData("comments");
+    await saveData(allGames.filter(g=>g.gameId !== gameId), "games");
+    await saveData(comments.filter(c=>c.gameId !== gameId), "comments");
+    res.redirect("/");
 })
 
 app.get("/logout", (req,res)=>{

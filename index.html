@@ -6,17 +6,17 @@
     <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
     <script src="client.js" defer></script>
     <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <title>Main Page</title>
 </head>
 <body>
     <header>
         %placeholderNav%
-        <div style="display: none;">
-            <h2>Whasssuuuuuuupp</h2>
-            <form action="" id="chatForm">
-                <input type="text" name="msg" placeholder="Type Message">
-            </form>
-            <div id="chatBox"></div>
+        <div id="menuDiv">
+            <div id="searchDiv">
+                <input id="search" onkeyup="searchFun()" type="text" placeholder="Search">
+                <i class="material-icons searchIcon">search</i>
+            </div>
         </div>
     </header>
     <main>

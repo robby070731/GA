@@ -55,14 +55,16 @@ io.on('connection', (socket) => {
 	console.log('a user connected');
     console.log(socket.request.session.email)
 	socket.on("comment", async (comment, gameId)=>{
+        if(comment.length > 100) return
 		console.log("Message: " + comment);
         const username = socket.request.session.username;
+        if(!username) return;
         const content = comment;
         const comments = await getData("comments");
         let specComments = comments.find(c=>c.gameId == gameId);
         console.log(specComments);
         if(!specComments){
-            comments.push({gameId,"comments":[]})
+            comments.push({gameId,"comments":[]});
             specComments = comments.find(c=>c.gameId == gameId);
         }
         specComments.comments.push({username, content});
@@ -112,9 +114,9 @@ app.get("/moreInfo", async (req, res)=>{
                 <button style="text-decoration:underline" onclick="confirmDelete('${game.gameId}');">Delete</button>
                 <h2>Update</h2>
                 <form action="/update?gameId=${game.gameId}" method="post">
-                    <input type="text" name="title" placeholder="Title" value="${escape(game.title)}">
+                    <input type="text" name="title" placeholder="Title" maxlength="50" value="${escape(game.title)}">
                     <input type="text" name="imgUrl" placeholder="Image URL">
-                    <input type="text" name="desc" placeholder="Description" value="${escape(game.desc)}">
+                    <input type="text" name="desc" placeholder="Description" maxlength="250" value="${escape(game.desc)}">
                     <input type="submit" value="Update">
                 </form>
             </div>
@@ -123,14 +125,22 @@ app.get("/moreInfo", async (req, res)=>{
             <div id="commentForm">
                 <h2>Comment</h2>
                 <form action="" id="commentForm">
-                    <input type="text" name="comment" placeholder="Comment">
+                    <input type="text" name="comment" placeholder="Comment" maxlength="100">
                 </form>
             </div>`: ""}
             <div id="comments">
                 ${comments && comments.comments.length ? `
                 ${comments.comments.map(c => `
                 <div class="comment">
-                    <p>${escape(c.username)}</p>
+                    <div class="commentGrid">
+                        <p>${escape(c.username)}</p>
+                        ${req.session.username === c.username ? `
+                        <div class="icons">
+                            <i class="material-icons" onclick="commentEdit(event)">edit</i>
+                            <i class="material-icons" onclick="commentDelete(event)">delete</i>
+                        </div>
+                        `: ""}
+                    </div>
                     <p>${escape(c.content)}</p>
                 </div>`).join("")}
                 `: ""}
@@ -158,10 +168,10 @@ app.get("/registerForm", async (req, res)=>{
         <div id="register">
             <h2>Login</h2>
             <form action="/register" method="post">
-                <input type="text" name="username" placeholder="Username">
-                <input type="email" name="email" placeholder="E-mail">
-                <input type="password" name="password" placeholder="Password">
-                <input type="password" name="passwordConfirm" placeholder="Confirm Password">
+                <input type="text" name="username" placeholder="Username" maxlength="50">
+                <input type="email" name="email" placeholder="E-mail" maxlength="100">
+                <input type="password" name="password" placeholder="Password" maxlength="25">
+                <input type="password" name="passwordConfirm" placeholder="Confirm Password" maxlength="25">
                 <input type="submit" value="Register">
             </form>
         </div>`;
@@ -174,9 +184,9 @@ app.get("/addGameForm", auth, async (req, res)=>{
         <div id="addGame">
             <h2>Add Game</h2>
             <form action="/addGame" method="post">
-                <input type="text" name="title" placeholder="Title">
+                <input type="text" name="title" placeholder="Title" maxlength="50">
                 <input type="url" name="imgSRC" placeholder="IMG-Link">
-                <input type="text" name="desc" placeholder="Description">
+                <input type="text" name="desc" placeholder="Description" maxlength="250">
                 <input type="submit" value="Add Game">
             </form>
         </div>`;

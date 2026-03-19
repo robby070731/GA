@@ -1,1 +1,8 @@
 Filter without reloading
+
+
+Char lim på allt
+
+Töm comment value
+
+User friendly css t.ex Hover

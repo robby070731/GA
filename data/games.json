@@ -5,5 +5,26 @@
         "desc": "Best game made ever",
         "author": "image@gmail.com",
         "gameId": "id:1773744969596"
+    },
+    {
+        "title": "Minecraft",
+        "imgSRC": "https://image.api.playstation.com/vulcan/ap/rnd/202407/0401/165b1afdf14c26321af90746e4a42e23416bb74eafd34b0c.png",
+        "desc": "Sandbox",
+        "author": "image@gmail.com",
+        "gameId": "id:1773829862296"
+    },
+    {
+        "title": "LOL",
+        "imgSRC": "https://cdn1.epicgames.com/offer/24b9b5e323bc40eea252a10cdd3b2f10/EGS_LeagueofLegends_RiotGames_S1_2560x1440-47eb328eac5ddd63ebd096ded7d0d5ab",
+        "desc": "MOBA - Dogshit Game",
+        "author": "image@gmail.com",
+        "gameId": "id:1773829881502"
+    },
+    {
+        "title": "Portal",
+        "imgSRC": "https://sm.ign.com/ign_nordic/cover/p/portal/portal_h2g3.jpg",
+        "desc": "Puzzle peak",
+        "author": "image@gmail.com",
+        "gameId": "id:1773829930375"
     }
 ]

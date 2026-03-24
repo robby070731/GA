@@ -96,14 +96,18 @@ nav a{
     background-color: rgb(192, 192, 192);
     border-radius: 15px;
     padding: 1%;
-}
-.commentGrid{
     display: grid;
     grid-template-columns: repeat(2, 1fr);
 }
 .icons{
     justify-self: right;
     cursor: pointer;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+}
+.commentIcon:hover{
+    background-color: rgb(170, 170, 170);
+    border-radius: 5px;
 }
 /* Media querys */
 @media (min-width: 500px){

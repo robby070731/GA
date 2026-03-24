@@ -60,6 +60,7 @@ io.on('connection', (socket) => {
         const username = socket.request.session.username;
         if(!username) return;
         const content = comment;
+        const commentId = "id:" + Date.now();
         const comments = await getData("comments");
         let specComments = comments.find(c=>c.gameId == gameId);
         console.log(specComments);
@@ -67,12 +68,19 @@ io.on('connection', (socket) => {
             comments.push({gameId,"comments":[]});
             specComments = comments.find(c=>c.gameId == gameId);
         }
-        specComments.comments.push({username, content});
+        specComments.comments.push({username, commentId, content});
         await saveData(comments, "comments");
         html = `
-            <div class="comment">
-                <p>${escape(username)}</p>
-                <p>${escape(content)}</p>
+            <div class="comment" id="${commentId}">
+                <div>
+                    <p>${escape(username)}</p>
+                    <p>${escape(content)}</p>
+                </div>
+                ${socket.request.session.username === username ? `
+                <div class="icons">
+                    <i class="material-icons commentIcon" onclick="commentEdit(event)">edit</i>
+                    <i class="material-icons commentIcon" onclick="commentDelete(event)">delete</i>
+                </div>`: ""}
             </div>`;
 		io.emit("comment", html);
 	})
@@ -131,17 +139,17 @@ app.get("/moreInfo", async (req, res)=>{
             <div id="comments">
                 ${comments && comments.comments.length ? `
                 ${comments.comments.map(c => `
-                <div class="comment">
-                    <div class="commentGrid">
+                <div class="comment" id="${c.commentId}">
+                    <div>
                         <p>${escape(c.username)}</p>
-                        ${req.session.username === c.username ? `
-                        <div class="icons">
-                            <i class="material-icons" onclick="commentEdit(event)">edit</i>
-                            <i class="material-icons" onclick="commentDelete(event)">delete</i>
-                        </div>
-                        `: ""}
+                        <p>${escape(c.content)}</p>
                     </div>
-                    <p>${escape(c.content)}</p>
+                    ${req.session.username === c.username ? `
+                    <div class="icons">
+                        <i class="material-icons commentIcon" onclick="commentEdit(event)">edit</i>
+                        <i class="material-icons commentIcon" onclick="commentDelete(event)">delete</i>
+                    </div>
+                    `: ""}
                 </div>`).join("")}
                 `: ""}
             </div>

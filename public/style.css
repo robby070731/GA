@@ -106,7 +106,8 @@ nav a{
     grid-template-columns: repeat(2, 1fr);
 }
 .commentIcon:hover{
-    background-color: rgb(170, 170, 170);
+    height: 60%;
+    background-color: rgb(160, 160, 160);
     border-radius: 5px;
 }
 /* Media querys */

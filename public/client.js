@@ -3,10 +3,45 @@ console.log("client");
 // Koppla upp
 const socket = io();
 
+const commentForm = document.querySelector("#commentForm");
+if(commentForm){
+    commentForm.addEventListener("submit", (event)=>{
+        event.preventDefault();
+        const comment = event.target.comment.value;
+        console.log(comment);
+        if(comment){
+            event.target.comment.value = "";
+            sendComment(comment);
+        }
+    })
+}
+
 function sendComment(comment){
     if(comment.length > 100) return
     socket.emit("comment", comment, gameId);
     console.log("Client has sent a message");
+}
+
+function commentEdit(event){
+    let commentId = event.target.parentElement.parentElement.id;
+    let content = event.target.parentElement.parentElement.children[0].children[1];
+    content.setAttribute("contenteditable", true);
+    content.focus();
+    content.addEventListener("keyup" ,(ev)=>{
+        let commentValue = ev.target.innerText.trim();
+        if(ev.keyCode == 13){
+            console.log(commentValue);
+            socket.emit("editComment", commentValue, commentId, gameId);
+        }
+    })
+}
+
+function commentDelete(event){
+    if(window.confirm("Are you sure?")){
+        console.log("Okidoki");
+        let commentId = event.target.parentElement.parentElement.id;
+        socket.emit("deleteComment", commentId, gameId);
+    }
 }
 
 socket.on("comment", (comment)=>{
@@ -15,15 +50,18 @@ socket.on("comment", (comment)=>{
     commentsDiv.insertAdjacentHTML("beforeend", comment);
 })
 
-const commentForm = document.querySelector("#commentForm");
-if(commentForm){
-    commentForm.addEventListener("submit", (event)=>{
-        event.preventDefault();
-        const comment = event.target.comment.value;
-        console.log(comment);
-        if(comment) sendComment(comment);
-    })
-}
+socket.on("editComment", (NewP, commentId)=>{
+    console.log("Great Success");
+    console.log(NewP);
+    let comment = document.getElementById(commentId).children[0];
+    comment.children[1].remove();
+    comment.insertAdjacentHTML("beforeend", NewP);
+})
+
+socket.on("deleteComment", (commentId)=>{
+    document.getElementById(commentId).remove();
+})
+
 window.addEventListener("load",()=>{
     let url = window.location.href.split("?");
     console.log(url[0]);
@@ -58,13 +96,4 @@ function searchFun(){
             div.classList.remove("hidden");
         }
     }
-}
-
-function commentEdit(event){
-    console.log("edit")
-    console.log(event.target)
-}
-
-function commentDelete(){
-    console.log("delete")
 }

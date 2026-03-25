@@ -70,9 +70,9 @@ io.on('connection', (socket) => {
         }
         specComments.comments.push({username, commentId, content});
         await saveData(comments, "comments");
-        html = `
+        const html = `
             <div class="comment" id="${commentId}">
-                <div>
+                <div class="content">
                     <p>${escape(username)}</p>
                     <p>${escape(content)}</p>
                 </div>
@@ -84,6 +84,29 @@ io.on('connection', (socket) => {
             </div>`;
 		io.emit("comment", html);
 	})
+    socket.on("editComment", async (commentValue, commentId, gameId)=>{
+        if(!gameId || !commentId) return
+        if(!commentValue || commentValue.length > 100) return
+        console.log("puss")
+        const allComments = await getData("comments");
+        const gameComments = allComments.find(c=>c.gameId === gameId);
+        const specComment = gameComments.comments.find(c=>c.commentId === commentId);
+        if(!socket.request.username === specComment.username) return
+        specComment.content = commentValue;
+        await saveData(allComments, "comments");
+        const html = `<p>${escape(commentValue)}</p>`;
+        io.emit("editComment", html, commentId);
+    })
+    socket.on("deleteComment", async (commentId, gameId)=>{
+        if(!gameId || !commentId) return
+        const allComments = await getData("comments");
+        const gameComments = allComments.find(c=>c.gameId === gameId);
+        const specComment = gameComments.comments.find(c=>c.commentId === commentId);
+        if(!socket.request.username === specComment.username) return
+        gameComments.comments = gameComments.comments.filter(c=>c.commentId !== commentId);
+        await saveData(allComments, "comments");
+        io.emit("deleteComment", commentId);
+    })
 })
 
 app.get("/troubleshoot", (req, res)=>{
@@ -140,7 +163,7 @@ app.get("/moreInfo", async (req, res)=>{
                 ${comments && comments.comments.length ? `
                 ${comments.comments.map(c => `
                 <div class="comment" id="${c.commentId}">
-                    <div>
+                    <div class="content">
                         <p>${escape(c.username)}</p>
                         <p>${escape(c.content)}</p>
                     </div>
@@ -162,8 +185,8 @@ app.get("/loginForm", async (req, res)=>{
 		<div id="login">
             <h2>Login</h2>
             <form action="/login" method="post">
-                <input type="email" name="email" placeholder="E-mail">
-                <input type="password" name="password" placeholder="Password">
+                <input type="email" name="email" placeholder="E-mail" value = "image@gmail.com">
+                <input type="password" name="password" placeholder="Password" value="1234">
                 <input type="submit" value="Login">
             </form>
 		</div>`;
@@ -233,9 +256,9 @@ app.post("/register", async (req, res)=>{
 })
 
 app.post("/addGame", auth, async (req, res)=>{
-    const title = req.body.title;
+    const title = req.body.title.trim() || "No_Title";
     const imgSRC = req.body.imgSRC;
-    const desc = req.body.desc;
+    const desc = req.body.desc.trim() || "No_Desc";
     const author = req.session.email;
     const gameId = "id:" + Date.now();
     const games = await getData("games");

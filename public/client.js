@@ -17,7 +17,7 @@ if(commentForm){
 }
 
 function sendComment(comment){
-    if(comment.length > 100) return
+    if(typeof comment !== "string" || comment.length > 100) return;
     socket.emit("comment", comment, gameId);
     console.log("Client has sent a message");
 }
@@ -25,14 +25,20 @@ function sendComment(comment){
 function commentEdit(event){
     let commentId = event.target.parentElement.parentElement.id;
     let content = event.target.parentElement.parentElement.children[0].children[1];
+    let original = content.innerText;
     content.setAttribute("contenteditable", true);
     content.focus();
-    content.addEventListener("keyup" ,(ev)=>{
-        let commentValue = ev.target.innerText.trim();
-        if(ev.keyCode == 13){
+    content.addEventListener("keyup" ,(event)=>{
+        let commentValue = event.target.innerText.trim();
+        if(event.keyCode == 13){
             console.log(commentValue);
             socket.emit("editComment", commentValue, commentId, gameId);
         }
+    content.addEventListener("focusout", ()=>{
+        console.log("Focus Lost");
+        console.log(original);
+        content.innerText = original;
+    })
     })
 }
 

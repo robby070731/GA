@@ -9,6 +9,10 @@
 .hidden{
     display: none;
 }
+nav a:hover{
+    background-color: rgb(160, 160, 160);
+    border-radius: 5px;
+}
 /* Searchbar */
 #menuDiv{
     display: flex;

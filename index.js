@@ -55,7 +55,8 @@ io.on('connection', (socket) => {
 	console.log('a user connected');
     console.log(socket.request.session.email)
 	socket.on("comment", async (comment, gameId)=>{
-        if(comment.length > 100) return
+        if(!comment) return;
+        if(typeof comment !== "string" || comment.length > 100) return;
 		console.log("Message: " + comment);
         const username = socket.request.session.username;
         if(!username) return;
@@ -87,7 +88,7 @@ io.on('connection', (socket) => {
     socket.on("editComment", async (commentValue, commentId, gameId)=>{
         if(!gameId || !commentId) return
         if(!commentValue || commentValue.length > 100) return
-        console.log("puss")
+        if(typeof commentValue !== "string");
         const allComments = await getData("comments");
         const gameComments = allComments.find(c=>c.gameId === gameId);
         const specComment = gameComments.comments.find(c=>c.commentId === commentId);
@@ -185,8 +186,8 @@ app.get("/loginForm", async (req, res)=>{
 		<div id="login">
             <h2>Login</h2>
             <form action="/login" method="post">
-                <input type="email" name="email" placeholder="E-mail" value = "image@gmail.com">
-                <input type="password" name="password" placeholder="Password" value="1234">
+                <input type="email" name="email" placeholder="E-mail">
+                <input type="password" name="password" placeholder="Password">
                 <input type="submit" value="Login">
             </form>
 		</div>`;
@@ -232,9 +233,9 @@ app.post("/login", async (req, res)=>{
     const existUsers = await getData("accounts");
     const user = existUsers.find(u=>u.email===email);
     // Kollar email och jämför lösenord
-    if(!user) return res.send(await render(req,"<h1>Incorrect credentials</h1>"));
+    if(!user) return res.redirect("/loginform?error=Incorrect credentials");
     const pwCheck = await bcrypt.compare(password, user.password);
-    if(!pwCheck) return res.send(await render(req,"<h1>Incorrect credentials</h1>"));
+    if(!pwCheck) return res.redirect("/loginform?error=Incorrect credentials");
     // Uppdatarar sessioms / kaka 
     req.session.loggedIn = true;
     req.session.email = email;

@@ -6,3 +6,7 @@ Char lim på allt
 Töm comment value
 
 User friendly css t.ex Hover
+
+
+
+Rapport ska vara pdf

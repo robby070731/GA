@@ -14,62 +14,61 @@ const sessionMiddleware = session({
     secret: "keyboard cat",
     resave: false,
     saveUninitialized: true,
-    cookie: {  }
+    cookie: {}
 })
 
 io.engine.use(sessionMiddleware);
 app.use(express.static("public"));
-app.use(express.urlencoded({extended:true}));
+app.use(express.urlencoded({ extended: true }));
 app.use(sessionMiddleware)
 
 server.listen(process.env.port || 3456, () => {
-	console.log("Server is running");
+    console.log("Server is running");
 })
 
-function auth(req, res, next){
-    if(req.session.loggedIn) return next();
+function auth(req, res, next) {
+    if (req.session.loggedIn) return next();
     res.redirect("/?error=Not logged in...");
 }
 
-async function render(req,data){
-    const template = await fs.readFile("index.html","utf8");
-    let html = template.replace("%content%",data);
+async function render(req, data) {
+    const template = await fs.readFile("index.html", "utf8");
+    let html = template.replace("%content%", data);
     // Placerar olika nav baserat på om du är inloggad
-    if(req.session.loggedIn){
-        html = html.replace("%placeholderNav%","<nav><h2><a href=\"/\">HOME</a></h2><h2><a href=\"/addGameForm\">Add Game</a></h2><h2><a href=\"/logout\">Log Out</a></h2></nav>")
+    if (req.session.loggedIn) {
+        html = html.replace("%placeholderNav%", "<nav><h2><a href=\"/\">HOME</a></h2><h2><a href=\"/addGameForm\">Add Game</a></h2><h2><a href=\"/logout\">Log Out</a></h2></nav>")
         return html;
     }
-    html = html.replace("%placeholderNav%","<nav><h2><a href=\"/\">HOME</a></h2><div></div><div><h2><a href=\"/registerForm\">Register</a></h2><h2><a href=\"/loginForm\">Login</a></h2></div></nav>")
+    html = html.replace("%placeholderNav%", "<nav><h2><a href=\"/\">HOME</a></h2><div></div><div><h2><a href=\"/registerForm\">Register</a></h2><h2><a href=\"/loginForm\">Login</a></h2></div></nav>")
     return html;
 }
 
-async function saveData(data, file){
-    await fs.writeFile(`data/${file}.json`,JSON.stringify(data,null, 4));
+async function saveData(data, file) {
+    await fs.writeFile(`data/${file}.json`, JSON.stringify(data, null, 4));
 }
 
-async function getData(file){
+async function getData(file) {
     return JSON.parse((await fs.readFile(`data/${file}.json`)));
 }
 
 io.on('connection', (socket) => {
-	console.log('a user connected');
+    console.log('a user connected');
     console.log(socket.request.session.email)
-	socket.on("comment", async (comment, gameId)=>{
-        if(!comment) return;
-        if(typeof comment !== "string" || comment.length > 100) return;
-		console.log("Message: " + comment);
+    socket.on("comment", async (comment, gameId) => {
+        if (!comment) return;
+        if (typeof comment !== "string" || comment.length > 100) return;
+        console.log("Message: " + comment);
         const username = socket.request.session.username;
-        if(!username) return;
+        if (!username) return;
         const content = comment;
         const commentId = "id:" + Date.now();
         const comments = await getData("comments");
-        let specComments = comments.find(c=>c.gameId == gameId);
-        console.log(specComments);
-        if(!specComments){
-            comments.push({gameId,"comments":[]});
-            specComments = comments.find(c=>c.gameId == gameId);
+        let specComments = comments.find(c => c.gameId == gameId);
+        if (!specComments) {
+            comments.push({ gameId, "comments": [] });
+            specComments = comments.find(c => c.gameId == gameId);
         }
-        specComments.comments.push({username, commentId, content});
+        specComments.comments.push({ username, commentId, content });
         await saveData(comments, "comments");
         const html = `
             <div class="comment" id="${commentId}">
@@ -83,40 +82,40 @@ io.on('connection', (socket) => {
                     <i class="material-icons commentIcon" onclick="commentDelete(event)">delete</i>
                 </div>`: ""}
             </div>`;
-		io.emit("comment", html);
-	})
-    socket.on("editComment", async (commentValue, commentId, gameId)=>{
-        if(!gameId || !commentId) return
-        if(!commentValue || commentValue.length > 100) return
-        if(typeof commentValue !== "string");
+        io.emit("comment", html);
+    })
+    socket.on("editComment", async (commentValue, commentId, gameId) => {
+        if (!gameId || !commentId) return
+        if (!commentValue || commentValue.length > 100) return
+        if (typeof commentValue !== "string");
         const allComments = await getData("comments");
-        const gameComments = allComments.find(c=>c.gameId === gameId);
-        const specComment = gameComments.comments.find(c=>c.commentId === commentId);
-        if(!socket.request.username === specComment.username) return
+        const gameComments = allComments.find(c => c.gameId === gameId);
+        const specComment = gameComments.comments.find(c => c.commentId === commentId);
+        if (!socket.request.username === specComment.username) return
         specComment.content = commentValue;
         await saveData(allComments, "comments");
         const html = `<p>${escape(commentValue)}</p>`;
         io.emit("editComment", html, commentId);
     })
-    socket.on("deleteComment", async (commentId, gameId)=>{
-        if(!gameId || !commentId) return
+    socket.on("deleteComment", async (commentId, gameId) => {
+        if (!gameId || !commentId) return
         const allComments = await getData("comments");
-        const gameComments = allComments.find(c=>c.gameId === gameId);
-        const specComment = gameComments.comments.find(c=>c.commentId === commentId);
-        if(!socket.request.username === specComment.username) return
-        gameComments.comments = gameComments.comments.filter(c=>c.commentId !== commentId);
+        const gameComments = allComments.find(c => c.gameId === gameId);
+        const specComment = gameComments.comments.find(c => c.commentId === commentId);
+        if (!socket.request.username === specComment.username) return
+        gameComments.comments = gameComments.comments.filter(c => c.commentId !== commentId);
         await saveData(allComments, "comments");
         io.emit("deleteComment", commentId);
     })
 })
 
-app.get("/troubleshoot", (req, res)=>{
+app.get("/troubleshoot", (req, res) => {
     res.send(req.session)
 })
 
-app.get("/", async (req, res)=>{
+app.get("/", async (req, res) => {
     const games = await getData("games");
-    const html = games.map(g=>`
+    const html = games.map(g => `
         <div class="games">
             <a href="/moreinfo?gameId=${g.gameId}">
                 <h2>${escape(g.title)}</h2>
@@ -129,28 +128,34 @@ app.get("/", async (req, res)=>{
     res.send(await render(req, html));
 })
 
-app.get("/moreInfo", async (req, res)=>{
+app.get("/moreInfo", async (req, res) => {
     const gameId = req.query.gameId;
-    const game = (await getData("games")).find(g=>g.gameId == gameId);
-    const comments = (await getData("comments")).find(c=>c.gameId == gameId);
+    const game = (await getData("games")).find(g => g.gameId == gameId);
+    const comments = (await getData("comments")).find(c => c.gameId == gameId);
     const html = `
         <script>const gameId = "${game.gameId}";</script>
         <div class="game">
             <div class="gameInfo">
-                <h3>${escape(game.title)}</h3>
-                <img src="${escape(game.imgSRC)}" alt="">
-                <p>${escape(game.desc)}</p>
+                <div class="imgBox">
+                    <img src="${escape(game.imgSRC)}" alt="">
+                </div>
+                <div class="gameText">
+                    <h3>${escape(game.title)}</h3>
+                    <p>${escape(game.desc)}</p>
+                </div>
             </div>
             ${req.session.loggedIn && req.session.email == game.author ? `
-            <div class="update">
-                <button style="text-decoration:underline" onclick="confirmDelete('${game.gameId}');">Delete</button>
-                <h2>Update</h2>
-                <form action="/update?gameId=${game.gameId}" method="post">
-                    <input type="text" name="title" placeholder="Title" maxlength="50" value="${escape(game.title)}">
-                    <input type="text" name="imgUrl" placeholder="Image URL">
-                    <input type="text" name="desc" placeholder="Description" maxlength="250" value="${escape(game.desc)}">
-                    <input type="submit" value="Update">
-                </form>
+            <div class="change">
+                <div class="update">
+                    <h2>Update</h2>
+                    <form action="/update?gameId=${game.gameId}" method="post">
+                        <input type="text" name="title" placeholder="Title" maxlength="50" value="${escape(game.title)}">
+                        <input type="text" name="imgUrl" placeholder="Image URL">
+                        <input type="text" name="desc" placeholder="Description" maxlength="250" value="${escape(game.desc)}">
+                        <input type="submit" value="Update">
+                    </form>
+                </div>
+                <button onclick="confirmDelete('${game.gameId}');">Delete</button>
             </div>
             `: ""}
             ${req.session.loggedIn ? `
@@ -181,8 +186,8 @@ app.get("/moreInfo", async (req, res)=>{
     res.send(await render(req, html));
 })
 
-app.get("/loginForm", async (req, res)=>{
-	const loginHtml = `
+app.get("/loginForm", async (req, res) => {
+    const loginHtml = `
 		<div id="login">
             <h2>Login</h2>
             <form action="/login" method="post">
@@ -191,12 +196,12 @@ app.get("/loginForm", async (req, res)=>{
                 <input type="submit" value="Login">
             </form>
 		</div>`;
-	const html = await render(req, loginHtml);
-	res.send(html);
+    const html = await render(req, loginHtml);
+    res.send(html);
 })
 
-app.get("/registerForm", async (req, res)=>{
-    const registerHtml =`
+app.get("/registerForm", async (req, res) => {
+    const registerHtml = `
         <div id="register">
             <h2>Login</h2>
             <form action="/register" method="post">
@@ -211,7 +216,7 @@ app.get("/registerForm", async (req, res)=>{
     res.send(html);
 })
 
-app.get("/addGameForm", auth, async (req, res)=>{
+app.get("/addGameForm", auth, async (req, res) => {
     const addGameHtml = `
         <div id="addGame">
             <h2>Add Game</h2>
@@ -226,16 +231,16 @@ app.get("/addGameForm", auth, async (req, res)=>{
     res.send(html);
 })
 
-app.post("/login", async (req, res)=>{
+app.post("/login", async (req, res) => {
     // Hämtar data från login formulär och existerande användare
     const email = req.body.email;
     const password = req.body.password;
     const existUsers = await getData("accounts");
-    const user = existUsers.find(u=>u.email===email);
+    const user = existUsers.find(u => u.email === email);
     // Kollar email och jämför lösenord
-    if(!user) return res.redirect("/loginform?error=Incorrect credentials");
+    if (!user) return res.redirect("/loginform?error=Incorrect credentials");
     const pwCheck = await bcrypt.compare(password, user.password);
-    if(!pwCheck) return res.redirect("/loginform?error=Incorrect credentials");
+    if (!pwCheck) return res.redirect("/loginform?error=Incorrect credentials");
     // Uppdatarar sessioms / kaka 
     req.session.loggedIn = true;
     req.session.email = email;
@@ -243,42 +248,42 @@ app.post("/login", async (req, res)=>{
     res.redirect("/?login_success");
 })
 
-app.post("/register", async (req, res)=>{
+app.post("/register", async (req, res) => {
     const username = req.body.username;
     const email = req.body.email;
     const accounts = await getData("accounts");
-    if(accounts.find(a=>a.email == email)) return res.send(await render(req,"<h1>There is already a user with this email</h1>"));
-    if(req.body.password !== req.body.passwordConfirm) return res.send(await render(req,"<h1>Password doesn't match</h1>"));
+    if (accounts.find(a => a.email == email)) return res.send(await render(req, "<h1>There is already a user with this email</h1>"));
+    if (req.body.password !== req.body.passwordConfirm) return res.send(await render(req, "<h1>Password doesn't match</h1>"));
     const password = await bcrypt.hash(req.body.password, 12);
-    const accountId = "id:" +  Date.now();
-    accounts.push({username, email, password, accountId});
+    const accountId = "id:" + Date.now();
+    accounts.push({ username, email, password, accountId });
     await saveData(accounts, "accounts");
     res.redirect("/loginForm");
 })
 
-app.post("/addGame", auth, async (req, res)=>{
+app.post("/addGame", auth, async (req, res) => {
     const title = req.body.title.trim() || "No_Title";
     const imgSRC = req.body.imgSRC;
     const desc = req.body.desc.trim() || "No_Desc";
     const author = req.session.email;
     const gameId = "id:" + Date.now();
     const games = await getData("games");
-    games.push({title, imgSRC, desc, author, gameId});
+    games.push({ title, imgSRC, desc, author, gameId });
     await saveData(games, "games");
     res.redirect("/?success")
 })
 
-app.get("/delete", auth, async (req, res)=>{
+app.get("/delete", auth, async (req, res) => {
     const gameId = req.query.gameId;
     const allGames = await getData("games");
-    if(!req.session.email === allGames.find(g=>g.gameId === gameId).author) return res.redirect("/?error=Not Authorized");
+    if (!req.session.email === allGames.find(g => g.gameId === gameId).author) return res.redirect("/?error=Not Authorized");
     const comments = await getData("comments");
-    await saveData(allGames.filter(g=>g.gameId !== gameId), "games");
-    await saveData(comments.filter(c=>c.gameId !== gameId), "comments");
+    await saveData(allGames.filter(g => g.gameId !== gameId), "games");
+    await saveData(comments.filter(c => c.gameId !== gameId), "comments");
     res.redirect("/");
 })
 
-app.get("/logout", (req,res)=>{
+app.get("/logout", (req, res) => {
     req.session.destroy();
     res.clearCookie("connect.sid");
     res.redirect("/");

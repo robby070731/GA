@@ -1,3 +1,5 @@
+// Imorting and defining librabies
+
 const express = require("express");
 require("dotenv").config();
 const { Server } = require("socket.io");
@@ -17,7 +19,9 @@ const sessionMiddleware = session({
     cookie: {}
 })
 
+// Kopplar session till websocket
 io.engine.use(sessionMiddleware);
+
 app.use(express.static("public"));
 app.use(express.urlencoded({ extended: true }));
 app.use(sessionMiddleware)
@@ -26,11 +30,13 @@ server.listen(process.env.port || 3456, () => {
     console.log("Server is running");
 })
 
+// Authorization function
 function auth(req, res, next) {
     if (req.session.loggedIn) return next();
     res.redirect("/?error=Not logged in...");
 }
 
+// Hämtar template.html och placerar innehåll
 async function render(req, data) {
     const template = await fs.readFile("index.html", "utf8");
     let html = template.replace("%content%", data);
@@ -43,23 +49,29 @@ async function render(req, data) {
     return html;
 }
 
+// Sparar data till json fil
 async function saveData(data, file) {
     await fs.writeFile(`data/${file}.json`, JSON.stringify(data, null, 4));
 }
 
+// Hämtar data från json fil
 async function getData(file) {
     return JSON.parse((await fs.readFile(`data/${file}.json`)));
 }
 
+// Websocket funktioner
 io.on('connection', (socket) => {
     console.log('a user connected');
-    console.log(socket.request.session.email)
+    console.log(socket.request.session.email);
+
+    // Funktion för att hantera nya kommentarer
     socket.on("comment", async (comment, gameId) => {
+        // Olika kollar för att validera kommentarer
         if (!comment) return;
         if (typeof comment !== "string" || comment.length > 100) return;
-        console.log("Message: " + comment);
         const username = socket.request.session.username;
         if (!username) return;
+
         const content = comment;
         const commentId = "id:" + Date.now();
         const comments = await getData("comments");
@@ -70,6 +82,8 @@ io.on('connection', (socket) => {
         }
         specComments.comments.push({ username, commentId, content });
         await saveData(comments, "comments");
+
+        // Bygger escapad html att skicka till clienten
         const html = `
             <div class="comment" id="${commentId}">
                 <div class="content">
@@ -84,10 +98,14 @@ io.on('connection', (socket) => {
             </div>`;
         io.emit("comment", html);
     })
+
+    // Funktion för att ändra kommentarer
     socket.on("editComment", async (commentValue, commentId, gameId) => {
+        // Validerar
         if (!gameId || !commentId) return
         if (!commentValue || commentValue.length > 100) return
         if (typeof commentValue !== "string");
+
         const allComments = await getData("comments");
         const gameComments = allComments.find(c => c.gameId === gameId);
         const specComment = gameComments.comments.find(c => c.commentId === commentId);
@@ -97,6 +115,8 @@ io.on('connection', (socket) => {
         const html = `<p>${escape(commentValue)}</p>`;
         io.emit("editComment", html, commentId);
     })
+
+    // Funktion för att radera kommentarer
     socket.on("deleteComment", async (commentId, gameId) => {
         if (!gameId || !commentId) return
         const allComments = await getData("comments");
@@ -109,12 +129,16 @@ io.on('connection', (socket) => {
     })
 })
 
+// Test route
 app.get("/troubleshoot", (req, res) => {
     res.send(req.session)
 })
 
+// Homepage
 app.get("/", async (req, res) => {
     const games = await getData("games");
+
+    // Mappar alla spel som html
     const html = games.map(g => `
         <div class="games">
             <a href="/moreinfo?gameId=${g.gameId}">
@@ -128,10 +152,13 @@ app.get("/", async (req, res) => {
     res.send(await render(req, html));
 })
 
+// Route for more info on a specific game
 app.get("/moreInfo", async (req, res) => {
     const gameId = req.query.gameId;
     const game = (await getData("games")).find(g => g.gameId == gameId);
     const comments = (await getData("comments")).find(c => c.gameId == gameId);
+
+    // Massiv template string för all html på more info sidan
     const html = `
         <script>const gameId = "${game.gameId}";</script>
         <div class="game">
@@ -186,6 +213,7 @@ app.get("/moreInfo", async (req, res) => {
     res.send(await render(req, html));
 })
 
+// Route för login formulär
 app.get("/loginForm", async (req, res) => {
     const loginHtml = `
 		<div id="login">
@@ -200,6 +228,7 @@ app.get("/loginForm", async (req, res) => {
     res.send(html);
 })
 
+// Route för register formulär
 app.get("/registerForm", async (req, res) => {
     const registerHtml = `
         <div id="register">
@@ -216,6 +245,7 @@ app.get("/registerForm", async (req, res) => {
     res.send(html);
 })
 
+// Route för add game formulär
 app.get("/addGameForm", auth, async (req, res) => {
     const addGameHtml = `
         <div id="addGame">
@@ -231,6 +261,7 @@ app.get("/addGameForm", auth, async (req, res) => {
     res.send(html);
 })
 
+// Login funktionalitet
 app.post("/login", async (req, res) => {
     // Hämtar data från login formulär och existerande användare
     const email = req.body.email;
@@ -248,6 +279,7 @@ app.post("/login", async (req, res) => {
     res.redirect("/?login_success");
 })
 
+// Register funktionalitet
 app.post("/register", async (req, res) => {
     const username = req.body.username;
     const email = req.body.email;
@@ -261,6 +293,7 @@ app.post("/register", async (req, res) => {
     res.redirect("/loginForm");
 })
 
+// Add game funktionalitet
 app.post("/addGame", auth, async (req, res) => {
     const title = req.body.title.trim() || "No_Title";
     const imgSRC = req.body.imgSRC;
@@ -273,17 +306,24 @@ app.post("/addGame", auth, async (req, res) => {
     res.redirect("/?success")
 })
 
+// Delete funktionalitet
 app.get("/delete", auth, async (req, res) => {
     const gameId = req.query.gameId;
     const allGames = await getData("games");
+
+    // Kollar så att du har behörighet att radera
     if (!req.session.email === allGames.find(g => g.gameId === gameId).author) return res.redirect("/?error=Not Authorized");
     const comments = await getData("comments");
+
+    // Tar bort spelet och dess kommentarer
     await saveData(allGames.filter(g => g.gameId !== gameId), "games");
     await saveData(comments.filter(c => c.gameId !== gameId), "comments");
     res.redirect("/");
 })
 
+// Logout funktionalitet
 app.get("/logout", (req, res) => {
+    // Rensar session / kakor och tar dig till homepage
     req.session.destroy();
     res.clearCookie("connect.sid");
     res.redirect("/");

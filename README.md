@@ -435,6 +435,7 @@ app.get("/logout", (req, res) => {
 Den här routen hanterar utloggning av användaren. Den förstör den aktiva sessionen, rensar sessions-cookien och loggar därmed ut användaren. Därefter omdirigeras användaren till startsidan.
 ***
 ## Klient javascript
+***
 ### Koppla upp
 ```js
 const socket = io();
@@ -565,7 +566,7 @@ function confirmDelete(gameId){
 Den här funktionen används för att bekräfta borttagning av ett spel. Den visar en bekräftelseruta, och om användaren godkänner omdirigeras webbläsaren till en route som hanterar borttagningen av spelet.
 ***
 
-### 
+### Hantering baserat på vilken sida du är på
 ```js
 // Event listener för när sidan laddar
 window.addEventListener("load",()=>{

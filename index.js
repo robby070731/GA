@@ -306,6 +306,25 @@ app.post("/addGame", auth, async (req, res) => {
     res.redirect("/?success")
 })
 
+// Update funktionalitet
+app.post("/update", auth, async (req, res) => {
+	const gameId = req.query.gameId;
+	const allGames = await getData("games");
+	const specGame = allGames.find(g => g.gameId === gameId);
+	if (specGame.author !== req.session.email) return res.redirect("/?error=Not Authorized");
+
+	let title = specGame.title;
+	if (req.body.title) title = req.body.title;
+	
+	let imgUrl = specGame.imgUrl;
+
+	
+	let desc = specGame.desc;
+
+	
+	res.redirect(`/moreInfo?gameId=${gameId}`);
+})
+
 // Delete funktionalitet
 app.get("/delete", auth, async (req, res) => {
     const gameId = req.query.gameId;

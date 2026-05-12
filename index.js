@@ -104,7 +104,7 @@ io.on('connection', (socket) => {
         // Validerar
         if (!gameId || !commentId) return
         if (!commentValue || commentValue.length > 100) return
-        if (typeof commentValue !== "string");
+        if (typeof commentValue !== "string") return
 
         const allComments = await getData("comments");
         const gameComments = allComments.find(c => c.gameId === gameId);

@@ -102,14 +102,15 @@ io.on('connection', (socket) => {
     // Funktion för att ändra kommentarer
     socket.on("editComment", async (commentValue, commentId, gameId) => {
         // Validerar
-        if (!gameId || !commentId) return
-        if (!commentValue || commentValue.length > 100) return
-        if (typeof commentValue !== "string") return
+        if (!gameId || !commentId) return;
+        if (!commentValue || commentValue.length > 100) return;
+        if (typeof commentValue !== "string") return;
 
         const allComments = await getData("comments");
         const gameComments = allComments.find(c => c.gameId === gameId);
+		if (!gameComments) return;
         const specComment = gameComments.comments.find(c => c.commentId === commentId);
-        if (socket.request.session.username !== specComment.username) return
+        if (socket.request.session.username !== specComment.username) return;
         specComment.content = commentValue;
         await saveData(allComments, "comments");
         const html = `<p>${escape(commentValue)}</p>`;
@@ -121,6 +122,7 @@ io.on('connection', (socket) => {
         if (!gameId || !commentId) return
         const allComments = await getData("comments");
         const gameComments = allComments.find(c => c.gameId === gameId);
+		if (!gameComments) return;
         const specComment = gameComments.comments.find(c => c.commentId === commentId);
         if (socket.request.session.username !== specComment.username) return
         gameComments.comments = gameComments.comments.filter(c => c.commentId !== commentId);
@@ -156,6 +158,7 @@ app.get("/", async (req, res) => {
 app.get("/moreInfo", async (req, res) => {
     const gameId = req.query.gameId;
     const game = (await getData("games")).find(g => g.gameId == gameId);
+	if (!game) return res.send("Game not found");
     const comments = (await getData("comments")).find(c => c.gameId == gameId);
 
     // Massiv template string för all html på more info sidan

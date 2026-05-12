@@ -141,7 +141,7 @@ app.get("/", async (req, res) => {
     // Mappar alla spel som html
     const html = games.map(g => `
         <div class="games">
-            <a href="/moreinfo?gameId=${g.gameId}">
+            <a href="/moreInfo?gameId=${g.gameId}">
                 <h2>${escape(g.title)}</h2>
                 <div class="imgBox">
                     <img src="${escape(g.imgSRC)}" alt="">

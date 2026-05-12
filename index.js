@@ -109,7 +109,7 @@ io.on('connection', (socket) => {
         const allComments = await getData("comments");
         const gameComments = allComments.find(c => c.gameId === gameId);
         const specComment = gameComments.comments.find(c => c.commentId === commentId);
-        if (!socket.request.username === specComment.username) return
+        if (socket.request.session.username !== specComment.username) return
         specComment.content = commentValue;
         await saveData(allComments, "comments");
         const html = `<p>${escape(commentValue)}</p>`;
@@ -122,7 +122,7 @@ io.on('connection', (socket) => {
         const allComments = await getData("comments");
         const gameComments = allComments.find(c => c.gameId === gameId);
         const specComment = gameComments.comments.find(c => c.commentId === commentId);
-        if (!socket.request.username === specComment.username) return
+        if (socket.request.session.username !== specComment.username) return
         gameComments.comments = gameComments.comments.filter(c => c.commentId !== commentId);
         await saveData(allComments, "comments");
         io.emit("deleteComment", commentId);
@@ -313,14 +313,16 @@ app.post("/update", auth, async (req, res) => {
 	const specGame = allGames.find(g => g.gameId === gameId);
 	if (specGame.author !== req.session.email) return res.redirect("/?error=Not Authorized");
 
-	let title = specGame.title;
-	if (req.body.title) title = req.body.title;
+	// Check if game exists
+    if (!specGame) return res.redirect("/?error=Game not found");
 	
-	let imgUrl = specGame.imgUrl;
-
+	if (req.body.title.trim()) specGame.title = req.body.title.trim();
 	
-	let desc = specGame.desc;
+	if (req.body.imgUrl) specGame.imgSRC = req.body.imgUrl;
+	
+	if (req.body.desc.trim()) specGame.desc = req.body.desc.trim();
 
+	await saveData(allGames, "games");
 	
 	res.redirect(`/moreInfo?gameId=${gameId}`);
 })
@@ -331,7 +333,7 @@ app.get("/delete", auth, async (req, res) => {
     const allGames = await getData("games");
 
     // Kollar så att du har behörighet att radera
-    if (!req.session.email === allGames.find(g => g.gameId === gameId).author) return res.redirect("/?error=Not Authorized");
+    if (req.session.email !== allGames.find(g => g.gameId === gameId).author) return res.redirect("/?error=Not Authorized");
     const comments = await getData("comments");
 
     // Tar bort spelet och dess kommentarer
